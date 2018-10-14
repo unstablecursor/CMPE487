@@ -11,6 +11,20 @@ discovery(){
     done 
 }
 
+decrypt_msg(){
+    local vars=$(echo $1 | md5)
+    if [ "$3" = "$4" ]
+    then
+        if [ "$vars" = "$2" ]
+        then
+            echo "1"
+            cypher=$2
+        else
+            echo "0"
+        fi
+    fi
+}
+
 be_discoverable(){
     sender_name=$1
     while true;do
@@ -52,12 +66,19 @@ recieve_message(){
         cyper=$(echo "$request" | cut -d';' -f2)
         local message
         message=$(echo "$request" | cut -d';' -f3)
+        varrr=$(decrypt_msg "$cypher" "$cyper" "$sender_ip" "$client_ip")
+        if [ "$varrr" = "0" ]; then
+            echo "Conversation has compromised please exit immediately."
+        fi
+        cypher=$cyper
         echo "$message" >> "$sender_ip.txt"
     done
 }
 
+cypher="everyoneKnowingTheProtocolCanSniffAndBreakSecurityAndOurMessagesArePlainText"
 pkill -f "tail -f"
 pkill -f "nc -l"
+rm -rf 192.168.*
 my_ip=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
 client_ip="0.0.0.0"
 echo "Enter your nick:"
@@ -86,6 +107,8 @@ while true; do
         if [ "$msg" = "SIGEXIT" ]; then
             break
         fi
-        echo "$my_ip;1;$msg" | nc -G 1 "$client_ip" 5001 &
+        second_c=$(echo $cypher | md5)
+        cypher=$second_c
+        echo "$my_ip;$second_c;$msg" | nc -G 1 "$client_ip" 5001 &
     done
 done
