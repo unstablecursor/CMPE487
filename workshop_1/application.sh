@@ -11,6 +11,11 @@ discovery(){
     done 
 }
 
+delete_duplicates(){
+    var=$(awk '!a[$0]++' client_list.txt)
+    echo "$var" > client_list.txt
+}
+
 be_discoverable(){
     sender_name=$1
     while true;do
@@ -26,14 +31,30 @@ be_discoverable(){
         then
             echo "1;$my_ip;$sender_name;$client_ip_;$client_name" | nc -G 1 "$client_ip_" 5000 &
             echo "$client_ip_;$client_name" >> client_list.txt
+            delete_duplicates
         fi
         if [ "$type" = "1" ]
         then
             echo "$client_ip_;$client_name" >> client_list.txt
+            delete_duplicates
         fi
     done
 }
 
+decrypt_msg(){
+    second_c = $(echo $1 | md5)
+    if [ "$second_c" = "$2"]
+    then
+        echo "1"
+    else
+        echo "0"
+    fi
+}
+
+crypt_msg(){
+    #get message.     
+    #unhash it
+}
 
 recieve_message(){
     while true;do
@@ -41,15 +62,31 @@ recieve_message(){
         request=$(nc -l 5001)
         local sender_ip
         sender_ip=$(echo "$request" | cut -d';' -f1)
-        touch "$sender_ip.txt"
-        local cyper
-        cyper=$(echo "$request" | cut -d';' -f2)
+        local cyp
+        cyp=$(echo "$request" | cut -d';' -f2)
         local message
         message=$(echo "$request" | cut -d';' -f3)
-        echo "$message" >> "$sender_ip.txt"
+        file=./file
+        if [ -e "$sender_ip.txt" ]; then
+            file_cyp=$(head -n 1 "$sender_ip.txt")
+            local res
+            res=$(decrypt_msg "$file_cyp" "$cyp")
+            if [ "$res" = "1"]
+            then
+                sed -i "1s/.*/$cyp/" "$sender_ip.txt"
+                echo "$message" >> "$sender_ip.txt"
+            else
+                rm "$sender_ip.txt"
+            fi
+        else 
+            touch "$sender_ip.txt"
+            echo "$cyp" >> "$sender_ip.txt"
+        fi 
     done
 }
 
+
+cypher="hello"
 pkill -f "tail -f"
 pkill -f "nc -l"
 my_ip=$(ifconfig | sed -En 's/127.0.0.1//;s/.*inet (addr:)?(([0-9]*\.){3}[0-9]*).*/\2/p')
@@ -72,6 +109,7 @@ while true; do
     client_ip=$(echo "$client_info" | cut -d';' -f1)
     echo $client_ip   
     echo "To exit the room, type SIGEXIT"
+    #burada cypher
     touch "$client_ip.txt"  
     pkill -f "tail -f"
     tail -f "$client_ip.txt" &
