@@ -1,22 +1,27 @@
 import socket
 import time as t
-import configs.client_config as cfg
 import hashlib
 import threading
+import subprocess
 
 CHAT_IP = "0.0.0.0"
 CHATS = {}
 CYPHERS = {}
 IP_NAMES = {}
+HOST = subprocess.check_output("ifconfig " + "en0" + " | awk '/inet / {print $2}'", shell=True).decode().split("\n")[0]
+# HOST = '127.0.0.1'
+BUFFER_SIZE = 1024
+NICK = "deniz"
+
 
 
 def handle_udp_connection(port):
     udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 0)
-    udp_server.bind((cfg.HOST, port))
+    udp_server.bind((HOST, port))
     while True:
         try:
-            data, addr = udp_server.recvfrom(cfg.BUFFER_SIZE)
+            data, addr = udp_server.recvfrom(BUFFER_SIZE)
             if data:
                 msg = data.decode().split(";")
                 if msg[0] == '1':
@@ -24,7 +29,7 @@ def handle_udp_connection(port):
                         CHATS[msg[1]] = []
                     IP_NAMES[msg[1]] = msg[2]
                 if msg[0] == '0':
-                    resp = ";".join([str(1), cfg.HOST, cfg.NICK, msg[1], msg[2]])
+                    resp = ";".join([str(1), HOST, NICK, msg[1], msg[2]])
                     if CHATS.get(msg[1]) is None:
                         CHATS[msg[1]] = []
                     IP_NAMES[msg[1]] = msg[2]
@@ -52,10 +57,10 @@ def cypher_check(cyper, ip):
 def handle_incom(port):
     udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 0)
-    udp_server.bind((cfg.HOST, port))
+    udp_server.bind((HOST, port))
     while True:
         try:
-            data, addr = udp_server.recvfrom(cfg.BUFFER_SIZE)
+            data, addr = udp_server.recvfrom(BUFFER_SIZE)
             if data:
                 msg = data.decode().split(";")
                 sender_ip = msg[0]
@@ -72,13 +77,13 @@ def handle_incom(port):
 def discover_udp_connection():
     udp_server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     udp_server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 0)
-    ip_addr = cfg.HOST.split(".")
+    ip_addr = HOST.split(".")
     ip_base = ".".join([ip_addr[0], ip_addr[1], ip_addr[2]])
     ip_top = 1
     while ip_top < 255:
         try:
             addr = (ip_base + "." + str(ip_top), 5000)
-            resp = ";".join([str(0), cfg.HOST, cfg.NICK, "0", "0"])
+            resp = ";".join([str(0), HOST, NICK, "0", "0"])
             udp_server.sendto(resp.encode(), addr)
         except socket.error as e:
             print("Socket error: {}".format(e))
@@ -86,7 +91,7 @@ def discover_udp_connection():
 
 
 if __name__ == '__main__':
-    print(cfg.HOST)
+    print(HOST)
     sender_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sender_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 0)
     hndl_udp = threading.Thread(name='handle_udp_connection', target=handle_udp_connection, args=[5000])
@@ -114,9 +119,9 @@ if __name__ == '__main__':
             msg_to_send = input()
             if msg_to_send == "wq":
                 break
-            CHATS[CHAT_IP].append(cfg.NICK + ": " + msg_to_send)
+            CHATS[CHAT_IP].append(NICK + ": " + msg_to_send)
             cypher_to_send = hashlib.md5(CYPHERS[CHAT_IP].encode('utf-8')).hexdigest()
             # TODO: Uncomment this line to enable p2p chat.
             # CYPHERS[CHAT_IP] = cypher_to_send
-            packet_to_send = ";".join([cfg.HOST, cypher_to_send, msg_to_send])
+            packet_to_send = ";".join([HOST, cypher_to_send, msg_to_send])
             sender_sock.sendto(packet_to_send.encode(), (CHAT_IP, 5001))
