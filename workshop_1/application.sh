@@ -75,7 +75,8 @@ recieve_message(){
     done
 }
 
-cypher="everyoneKnowingTheProtocolCanSniffAndBreakSecurityAndOurMessagesArePlainText"
+echo "Enter random cypher"
+read cypher
 pkill -f "tail -f"
 pkill -f "nc -l"
 rm -rf 192.168.*
