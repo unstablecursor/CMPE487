@@ -37,18 +37,18 @@ def handle_udp_connection(port):
 
 def cypher_check(cyper, ip):
     if CYPHERS.get(ip) is None:
-        rand_string = "asdsdfdsf"
-        CYPHERS[ip] = hashlib.md5(rand_string.encode('utf-8')).hexdigest()
+        rnd_string = "asdsdfdsf"
+        CYPHERS[ip] = hashlib.md5(rnd_string.encode('utf-8')).hexdigest()
     ip_cypher = CYPHERS[ip]
     cypher_1up = hashlib.md5(ip_cypher.encode('utf-8')).hexdigest()
-    # if cyper == cypher_1up:
-    CYPHERS[ip] = cypher_1up
-    return True
-    # else:
-    #     CYPHERS.pop(ip, None)
-    #     CHATS.pop(ip, None)
-    #     print("Conversation have been compromised.")
-    #     return True
+    if cyper == cypher_1up:
+        CYPHERS[ip] = cypher_1up
+        return True
+    else:
+        CYPHERS.pop(ip, None)
+        CHATS.pop(ip, None)
+        print("Conversation have been compromised.")
+        return True
 
 
 def handle_incom(port):
@@ -117,11 +117,8 @@ if __name__ == '__main__':
             if msg_to_send == "wq":
                 break
             CHATS[CHAT_IP].append(IP_NAMES[CHAT_IP] + ": " + msg_to_send)
-            cypher_to_send =  hashlib.md5(CYPHERS[CHAT_IP].encode('utf-8')).hexdigest()
+            cypher_to_send = hashlib.md5(CYPHERS[CHAT_IP].encode('utf-8')).hexdigest()
+            # TODO: Uncomment this line to enable p2p chat.
+            # CYPHERS[CHAT_IP] = cypher_to_send
             packet_to_send = ";".join([cfg.HOST, cypher_to_send, msg_to_send])
             sender_sock.sendto(packet_to_send.encode(), (CHAT_IP, 5001))
-
-
-
-
-
