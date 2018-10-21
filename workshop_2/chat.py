@@ -24,12 +24,12 @@ def handle_udp_connection(port):
                 if msg[0] == '1':
                     if CHATS.get(msg[1]) is None:
                         CHATS[msg[1]] = []
-                        IP_NAMES[msg[1]] = msg[2]
+                    IP_NAMES[msg[1]] = msg[2]
                 if msg[0] == '0':
-                    resp = ";".join([str(0), cfg.HOST, cfg.NICK, msg[1], msg[2]])
+                    resp = ";".join([str(1), cfg.HOST, cfg.NICK, msg[1], msg[2]])
                     if CHATS.get(msg[1]) is None:
                         CHATS[msg[1]] = []
-                        IP_NAMES[msg[1]] = msg[2]
+                    IP_NAMES[msg[1]] = msg[2]
                     udp_server.sendto(resp.encode(), addr)
         except socket.error as e:
             print("Socket error: {}".format(e))
@@ -48,7 +48,7 @@ def cypher_check(cyper, ip):
         CYPHERS.pop(ip, None)
         CHATS.pop(ip, None)
         print("Conversation have been compromised.")
-        return True
+        return False
 
 
 def handle_incom(port):
@@ -77,7 +77,7 @@ def discover_udp_connection():
     ip_addr = cfg.HOST.split(".")
     ip_base = ".".join([ip_addr[0], ip_addr[1], ip_addr[2]])
     ip_top = 1
-    while ip_top < 6:
+    while ip_top < 255:
         try:
             addr = (ip_base + "." + str(ip_top), 5000)
             resp = ";".join([str(0), cfg.HOST, cfg.NICK, "0", "0"])
@@ -116,7 +116,7 @@ if __name__ == '__main__':
             msg_to_send = input()
             if msg_to_send == "wq":
                 break
-            CHATS[CHAT_IP].append(IP_NAMES[CHAT_IP] + ": " + msg_to_send)
+            CHATS[CHAT_IP].append(cfg.NICK + ": " + msg_to_send)
             cypher_to_send = hashlib.md5(CYPHERS[CHAT_IP].encode('utf-8')).hexdigest()
             # TODO: Uncomment this line to enable p2p chat.
             # CYPHERS[CHAT_IP] = cypher_to_send
