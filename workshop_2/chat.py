@@ -18,9 +18,7 @@ def handle_udp_connection(port):
         try:
             data, addr = udp_server.recvfrom(cfg.BUFFER_SIZE)
             if data:
-                print(data)
                 msg = data.decode().split(";")
-                print(msg)
                 if msg[0] == '1':
                     if CHATS.get(msg[1]) is None:
                         CHATS[msg[1]] = []
@@ -106,12 +104,12 @@ if __name__ == '__main__':
             if val == client_name:
                 CHAT_IP = key
                 break
+        print("===Enter wq to exit===")
         for val in CHATS[CHAT_IP]:
             print(val)
         if CYPHERS.get(CHAT_IP) is None:
             rand_string = "asdsdfdsf"
             CYPHERS[CHAT_IP] = hashlib.md5(rand_string.encode('utf-8')).hexdigest()
-        print("===Enter wq to exit===")
         while True:
             msg_to_send = input()
             if msg_to_send == "wq":
